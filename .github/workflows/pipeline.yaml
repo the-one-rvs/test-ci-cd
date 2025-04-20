@@ -1,0 +1,81 @@
+name: Deploy to ECS
+
+on:
+  push:
+    branches: [ master ]
+
+env:
+  AWS_REGION: eu-north-1
+  ECR_REPOSITORY: quasarcelestio/test-bk
+  ECS_SERVICE: quasar-service
+  ECS_CLUSTER: quasar-cluster
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      working-directory: ./docker-strapi
+      run: |
+        docker build -t ${{ env.ECR_REPOSITORY }}:${{ github.sha }} .
+        
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+        format: 'json'
+        output: 'trivy-results.json'
+
+    - name: Push Trivy scan results
+      uses: actions/upload-artifact@v4
+      with:
+        name: trivy-results
+        path: trivy-results.json
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Push image to Docker Hub
+      run: docker push ${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      
+    - name: Terraform Init
+      working-directory: ./tf
+      run: terraform init
+      
+    - name: Terraform Apply
+      working-directory: ./tf
+      run: | 
+        export TF_VAR_aws_access_key=${{ secrets.AWS_ACCESS_KEY_ID }}
+        export TF_VAR_aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        terraform apply -auto-approve
+
+    - name: Install Ansible dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y ansible sshpass
+
+    - name: Run Ansible Playbook
+      working-directory: ./ansible
+      run: |
+        ansible-playbook -i inventory.ini playbook.yml
+

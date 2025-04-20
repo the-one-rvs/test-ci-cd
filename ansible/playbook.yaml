@@ -1,0 +1,68 @@
+---
+- name: Install Docker on Docker EC2
+  hosts: strapi
+  become: true
+
+  vars:
+    docker_user: ubuntu  # <-- Change this to the actual user if different
+
+  tasks:
+    - name: Update APT
+      apt:
+        update_cache: yes
+
+    - name: Install dependencies
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+        state: present
+
+    - name: Add Docker GPG Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu focal stable
+        state: present
+
+    - name: Install Docker
+      apt:
+        name: docker-ce
+        state: latest
+
+    - name: Enable and Start Docker
+      systemd:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Add user to Docker group
+      user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: yes
+
+    - name: Restart Docker to apply group changes
+      systemd:
+        name: docker
+        state: restarted
+
+    - name: Pull Strapi Docker image
+      docker_image:
+        name: quasarcelestio/docker-strapi
+        source: pull
+        force_source: yes
+
+    - name: Run Strapi container
+      docker_container:
+        name: strapi-container
+        image: quasarcelestio/docker-strapi
+        state: started
+        restart_policy: always
+        ports:
+          - "1337:1337"
