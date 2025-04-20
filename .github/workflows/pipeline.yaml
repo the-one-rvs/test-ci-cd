@@ -5,7 +5,7 @@ on:
     branches: [ master ]
 
 env:
-  AWS_REGION: eu-north-1
+  AWS_REGION: us-east-1
   ECR_REPOSITORY: quasarcelestio/test-bk
   ECS_SERVICE: quasar-service
   ECS_CLUSTER: quasar-cluster
