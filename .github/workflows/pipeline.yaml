@@ -17,6 +17,13 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+    
+    - name: Generate SSH Key Pair (ec2-key)
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keygen -t rsa -b 4096 -f ~/.ssh/ec2-key -N ""
+        chmod 600 ~/.ssh/ec2-key           
+        chmod 644 ~/.ssh/ec2-key.pub       
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -67,24 +74,16 @@ jobs:
       run: | 
         export TF_VAR_aws_access_key=${{ secrets.AWS_ACCESS_KEY_ID }}
         export TF_VAR_aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        export TF_VAR_ec2_public_key="${{ secrets.EC2_PUBLIC_KEY }}"
+        export TF_VAR_ec2_public_key="$(cat ~/.ssh/ec2-key.pub)"
         terraform apply -auto-approve
-
-    - name: Save SSH Private Key
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.EC2_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-
 
     - name: Install Ansible dependencies
       run: |
         sudo apt update
         sudo apt install -y ansible sshpass
     
-
     - name: Run Ansible Playbook
       working-directory: ./ansible
       run: |
-        ansible-playbook -i inventory.ini playbook.yaml --private-key ~/.ssh/id_rsa
+        ansible-playbook -i inventory.ini playbook.yaml
 
