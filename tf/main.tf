@@ -30,17 +30,17 @@ resource "aws_security_group" "vaibhav_strapi_sg" {
     }
 }
 
-# resource "aws_key_pair" "ec2-key" {
-#   key_name   = "ec2-key"
-#   public_key = var.ec2_public_key
-# }
+resource "aws_key_pair" "ec2-key" {
+  key_name   = "ec2-key"
+  public_key = var.ec2_public_key
+}
 
 
 resource "aws_instance" "strapi_instance" {
   ami           = "ami-084568db4383264d4"
   instance_type = "t2.small"
   vpc_security_group_ids = [aws_security_group.vaibhav_strapi_sg.id]
-  # key_name      = aws_key_pair.ec2-key.key_name
+  key_name      = aws_key_pair.ec2-key.key_name
 
   tags = {
     Name = "Vaibhav-Strapi-Docker"
