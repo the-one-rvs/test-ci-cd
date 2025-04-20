@@ -4,8 +4,8 @@ provider "aws" {
     secret_key = var.aws_secret_key
 }
 
-resource "aws_security_group" "strapi_sg" {
-    name        = "strapi_sg"
+resource "aws_security_group" "vaibhav_strapi_sg" {
+    name        = "vaibhav_strapi_sg"
     description = "strapi security group"
 
     ingress {
@@ -39,7 +39,7 @@ resource "aws_key_pair" "ec2-key" {
 resource "aws_instance" "strapi_instance" {
   ami           = "ami-084568db4383264d4"
   instance_type = "t2.small"
-  vpc_security_group_ids = [aws_security_group.strapi_sg.id]
+  vpc_security_group_ids = [aws_security_group.vaibhav_strapi_sg.id]
   key_name      = aws_key_pair.ec2-key.key_name
 
   tags = {
