@@ -67,6 +67,7 @@ jobs:
       run: | 
         export TF_VAR_aws_access_key=${{ secrets.AWS_ACCESS_KEY_ID }}
         export TF_VAR_aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        export TF_VAR_ec2_public_key="${{ secrets.EC2_PUBLIC_KEY }}"
         terraform apply -auto-approve
 
     - name: Install Ansible dependencies

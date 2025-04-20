@@ -32,7 +32,7 @@ resource "aws_security_group" "strapi_sg" {
 
 resource "aws_key_pair" "ec2-key" {
   key_name   = "ec2-key"
-  public_key = file("~/.ssh/ec2-key.pub")
+  public_key = var.ec2_public_key
 }
 
 
